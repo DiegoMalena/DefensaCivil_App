@@ -42,7 +42,7 @@ class _AlbergueScreenState extends State<AlbergueScreen> {
           _albergues = albergues.cast<Albergue>();
           _markers.addAll(_albergues.map((a) => Marker(
                 markerId: MarkerId(a.codigo),
-                position: LatLng(a.lat, a.lng),
+                position: LatLng(a.lng, a.lat), // Intercambio de lat y lng aquí
                 infoWindow: InfoWindow(
                   title: a.edificio,
                   snippet: 'Coordinador: ${a.coordinador}',
@@ -140,7 +140,7 @@ class _AlbergueScreenState extends State<AlbergueScreen> {
           ? const Center(child: CircularProgressIndicator())
           : GoogleMap(
               initialCameraPosition: const CameraPosition(
-                target: LatLng(18.5, -71.2),
+                target: LatLng(18.5, -71.2), // Coordenadas iniciales de República Dominicana
                 zoom: 8,
               ),
               markers: _markers,

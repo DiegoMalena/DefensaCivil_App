@@ -25,6 +25,7 @@ class AppDrawer extends StatelessWidget {
           _buildMenuItem(context, Icons.group, 'Miembros', AppRoutes.miembros),
           _buildMenuItem(context, Icons.volunteer_activism, 'Quiero ser voluntario', AppRoutes.voluntario),
           _buildMenuItem(context, Icons.map, 'Albergues', AppRoutes.albergues),
+          _buildMenuItem(context, Icons.video_library, 'Videos', AppRoutes.videos),
           _buildMenuItem(context, Icons.person, 'Acerca de', AppRoutes.acerca),
 
           const Divider(),

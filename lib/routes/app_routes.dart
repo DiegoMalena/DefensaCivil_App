@@ -17,6 +17,7 @@ import '../screens/private/private_home_screen.dart';
 import '../screens/private/private_reportar_screen.dart';
 import '../screens/private/private_situacione_screen.dart';
 import '../screens/private/contrasena_screen.dart';
+import '../screens/public/video_screen.dart';
 
 class AppRoutes {
   // Configuración principal
@@ -32,6 +33,7 @@ class AppRoutes {
   static const String acerca = '/acerca';
   static const String voluntario = '/voluntario';
   static const String albergues = '/albergues';
+  static const String videos = '/videos';
   static const String login = '/login';
   
   // Rutas privadas
@@ -90,6 +92,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const MisSituacionesScreen());
       case contrasena:
         return MaterialPageRoute(builder: (_) => const CambiarClaveScreen());
+      case videos:
+        return MaterialPageRoute(builder: (_) =>  VideoScreen());
       default:
         return _errorRoute();
     }
