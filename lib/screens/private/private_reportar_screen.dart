@@ -7,8 +7,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:mi_app/auth/auth_service.dart';
 
-
-
 class ReportarSituacionScreen extends StatefulWidget {
   const ReportarSituacionScreen({super.key});
 
@@ -51,7 +49,7 @@ class _ReportarSituacionScreenState extends State<ReportarSituacionScreen> {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        throw 'Por favor active el GPS en su dispositivo';
+        throw 'Active el GPS para obtener la ubicación';
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
@@ -59,7 +57,7 @@ class _ReportarSituacionScreenState extends State<ReportarSituacionScreen> {
         permission = await Geolocator.requestPermission();
         if (permission != LocationPermission.whileInUse && 
             permission != LocationPermission.always) {
-          throw 'Permiso de ubicación requerido para reportar situaciones';
+          throw 'Permiso de ubicación requerido';
         }
       }
 
@@ -68,8 +66,8 @@ class _ReportarSituacionScreenState extends State<ReportarSituacionScreen> {
       );
       
       setState(() {
-        _latitud = position.latitude.toStringAsFixed(6);
-        _longitud = position.longitude.toStringAsFixed(6);
+        _latitud = position.latitude.toStringAsFixed(5);
+        _longitud = position.longitude.toStringAsFixed(5);
         _ubicacionObtenida = true;
       });
       
@@ -90,21 +88,14 @@ class _ReportarSituacionScreenState extends State<ReportarSituacionScreen> {
     
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debe iniciar sesión para reportar')),
+        const SnackBar(content: Text('Debe iniciar sesión')),
       );
       return;
     }
     
-    if (!_fotoTomada) {
+    if (!_fotoTomada || !_ubicacionObtenida) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor tome una foto de la situación')),
-      );
-      return;
-    }
-    
-    if (!_ubicacionObtenida) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor obtenga su ubicación actual')),
+        const SnackBar(content: Text('Complete todos los campos requeridos')),
       );
       return;
     }
@@ -112,12 +103,13 @@ class _ReportarSituacionScreenState extends State<ReportarSituacionScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Convertir imagen a base64 con prefijo data URI
       List<int> imageBytes = await _foto!.readAsBytes();
-      String base64Image = base64Encode(imageBytes);
+      String base64Image = 'data:image/png;base64,${base64Encode(imageBytes)}';
 
-      final response = await http.post(
-        Uri.parse('https://adamix.net/defensa_civil/def/nueva_situacion.php'),
-        body: {
+      // Construir URL con parámetros en query string
+      final url = Uri.parse('https://adamix.net/defensa_civil/def/nueva_situacion.php').replace(
+        queryParameters: {
           'token': token,
           'titulo': _tituloController.text,
           'descripcion': _descripcionController.text,
@@ -125,10 +117,24 @@ class _ReportarSituacionScreenState extends State<ReportarSituacionScreen> {
           'latitud': _latitud!,
           'longitud': _longitud!,
         },
-      ).timeout(const Duration(seconds: 30));
+      );
 
-      final jsonResponse = json.decode(response.body);
-      
+      // Crear request multipart
+      var request = http.MultipartRequest('POST', url)
+        ..fields.addAll({
+          'token': token,
+          'titulo': _tituloController.text,
+          'descripcion': _descripcionController.text,
+          'foto': base64Image,
+          'latitud': _latitud!,
+          'longitud': _longitud!,
+        });
+
+      // Enviar petición
+      var response = await request.send();
+      var responseBody = await response.stream.bytesToString();
+      var jsonResponse = json.decode(responseBody);
+
       if (jsonResponse['exito'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(jsonResponse['mensaje'])),
@@ -137,13 +143,9 @@ class _ReportarSituacionScreenState extends State<ReportarSituacionScreen> {
       } else {
         throw jsonResponse['mensaje'] ?? 'Error al enviar el reporte';
       }
-    } on http.ClientException catch (e) {
-      if (e.message.contains('401')) {
-        authService.logout();
-        Navigator.pushReplacementNamed(context, '/login');
-      }
+    } on SocketException {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error de autenticación: ${e.message}')),
+        const SnackBar(content: Text('Error de conexión')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
